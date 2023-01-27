@@ -37,12 +37,10 @@ app.get('/handleAuth', (req, res) => {
     },
   }).then(function (response) {
     // handle success
-    console.log(response.data.token)
     res.redirect('knocky://finishAuth/'+response.data.token)
   })
   .catch(function (error) {
     // handle error
-    console.log(error)
     res.send(error.response.data)
   })
   .then(function () {
@@ -120,7 +118,6 @@ app.post('/*', async (req, res) => {
     })
     res.send(apiResponse.data)
   } catch (err) {
-    console.error(err)
     res.status(err.response.status)
     res.send(err.response.data.message)
   }
@@ -156,7 +153,6 @@ app.put('/*', async (req, res) => {
     })
     res.send(apiResponse.data)
   } catch (err) {
-    console.error(err)
     res.status(err.response.status)
     res.send(err.response.data.message)
   }
@@ -192,7 +188,6 @@ app.delete('/*', async (req, res) => {
     })
     res.send(apiResponse.data)
   } catch (err) {
-    console.error(err)
     res.status(err.response.status)
     res.send(err.response.data.message)
   }
