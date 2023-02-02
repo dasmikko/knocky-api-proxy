@@ -49,7 +49,9 @@ app.get('/handleAuth', (req, res) => {
 })
 
 app.get('/*', async (req, res) => {
-  let params = {}
+  let params = {
+    ...req.query
+  }
   let headers = {
     userAgent: 'Knocky'
   }
@@ -89,7 +91,9 @@ app.get('/*', async (req, res) => {
 })
 
 app.post('/*', async (req, res) => {
-  let params = {}
+  let params = {
+    ...req.query
+  }
   let headers = {
     userAgent: 'Knocky',
   }
@@ -124,7 +128,9 @@ app.post('/*', async (req, res) => {
 })
 
 app.put('/*', async (req, res) => {
-  let params = {}
+  let params = {
+    ...req.query
+  }
   let headers = {
     userAgent: 'Knocky',
   }
@@ -159,7 +165,9 @@ app.put('/*', async (req, res) => {
 })
 
 app.delete('/*', async (req, res) => {
-  let params = {}
+  let params = {
+    ...req.query
+  }
   let headers = {
     userAgent: 'Knocky',
   }
