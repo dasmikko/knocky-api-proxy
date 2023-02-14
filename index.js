@@ -14,9 +14,10 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 const apiKey = process.env.APIKEY
+const apiUrl = process.env.API_URL
 
 const knockoutApi = axios.create({
-  baseURL: 'https://api.knockout.chat/',
+  baseURL: apiUrl,
 });
 
 app.get('/', (req, res) => {
@@ -28,7 +29,7 @@ app.get('/handleAuth', (req, res) => {
 
   axios({
     method: 'POST',
-    url: `https://api.knockout.chat/auth/request-token`,
+    url: `${apiUrl}/auth/request-token`,
     params: {
       key: apiKey
     },
@@ -65,10 +66,6 @@ app.get('/*', async (req, res) => {
     headers['x-forwarded-for'] = req.headers['x-forwarded-for']
   }
 
-  if (req.headers['x-forwarded-for']) {
-    headers['x-forwarded-for'] = req.headers['x-forwarded-for']
-  }
-
   if (req.headers['Access-Control-Request-Headers']) {
     headers['Access-Control-Request-Headers'] = req.headers['Access-Control-Request-Headers']
   }
@@ -82,9 +79,12 @@ app.get('/*', async (req, res) => {
       params: params,
       headers: headers
     })
+    res.headers = {
+      ...apiResponse.headers
+    }
     res.send(apiResponse.data)
   } catch (err) {
-    console.error(err)
+    console.log(err)
     res.status(err.response.status)
     res.send(err.response.data.message)
   }
