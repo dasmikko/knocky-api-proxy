@@ -20,6 +20,17 @@ const knockoutApi = axios.create({
   baseURL: apiUrl,
 });
 
+knockoutApi.interceptors.request.use(request => {
+  console.log('Request:', {
+    method: request.method,
+    url: request.baseURL + request.url,
+    headers: request.headers,
+    params: request.params,
+    data: request.data,
+  });
+  return request;
+});
+
 app.get('/', (req, res) => {
   res.send('Hi there! This is the auth API for Knocky. There really isn\'t anything cool to find around here...')
 })
@@ -27,14 +38,14 @@ app.get('/', (req, res) => {
 app.get('/handleAuth', (req, res) => {
   const authToken = req.query.authorization
 
-  axios({
-    method: 'POST',
-    url: `${apiUrl}/auth/request-token`,
+  knockoutApi.post('/auth/request-token', {
+    'authorization': authToken
+  }, {
     params: {
       key: apiKey
     },
-    data: {
-      'authorization': authToken
+    headers: {
+      userAgent: 'Knocky'
     },
   }).then(function (response) {
     // handle success
