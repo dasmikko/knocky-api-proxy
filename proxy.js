@@ -29,7 +29,28 @@ app.get('/handleAuth', (req, res) => {
     return
   }
 
-  axios({
+  axios.post(`${apiUrl}/auth/request-token`, {
+    'authorization': authToken
+  }, {
+    params: {
+      key: apiKey
+    },
+    headers: {
+      'user-agent': 'Knocky'
+    },
+  }).then(function (response) {
+    // handle success
+    res.redirect('knocky://finishAuth/'+response.data.token)
+  })
+  .catch(function (error) {
+    // handle error
+    res.send(error.response.data)
+  })
+  .then(function () {
+    // always executed
+  })
+
+  /*axios({
     method: 'POST',
     url: `${apiUrl}/auth/request-token`,
     params: {
@@ -51,7 +72,7 @@ app.get('/handleAuth', (req, res) => {
     })
     .then(function () {
       // always executed
-    })
+    })*/
 })
 
 app.all('/*', (req, res) => {
