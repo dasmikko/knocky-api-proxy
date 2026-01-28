@@ -2,13 +2,17 @@ require('dotenv').config()
 const express = require('express')
 const axios = require('axios')
 const bodyParser = require('body-parser');
-const proxy = require('express-http-proxy');
 
 const app = express()
 const port = 8080
 
 const apiKey = process.env.APIKEY
-const apiUrl = process.env.API_URL
+const apiUrl = process.env.API_URL.replace(/\/+$/, '')
+
+// parse request bodies
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use(bodyParser.raw({ type: '*/*' }))
 
 app.get('/handleAuth', (req, res) => {
   const authToken = req.query.authorization
@@ -41,44 +45,63 @@ app.get('/handleAuth', (req, res) => {
     })
 })
 
-app.use('/', proxy(apiUrl, {
-  proxyReqOptDecorator: function(proxyReqOpts, srcReq) {
-    if (srcReq.headers.knockoutjwt) {
-      proxyReqOpts.headers.authorization = srcReq.headers.knockoutjwt
-    }
-
-    proxyReqOpts.headers['user-agent'] = 'Knocky'
-    delete proxyReqOpts.headers.knockoutjwt
-
-    return proxyReqOpts;
-  },
-  proxyReqPathResolver: function (req) {
-    const urlObj = new URL('http://example.com'+req.url)
-
-    // Add api key to query if knockoutjwt is sent in the header
-    if (req.headers.knockoutjwt) {
-      urlObj.searchParams.append('key', apiKey)
-    }
-
-    return urlObj.href.replace('http://example.com', '');
+app.all('/*', (req, res) => {
+  const headers = {
+    'user-agent': 'Knocky',
   }
-}));
 
-// parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
+  if (req.headers.knockoutjwt) {
+    headers['authorization'] = req.headers.knockoutjwt
+  }
 
+  if (req.headers['content-type']) {
+    headers['content-type'] = req.headers['content-type']
+  }
 
+  if (req.headers['content-format-version']) {
+    headers['content-format-version'] = req.headers['content-format-version']
+  }
 
-app.listen(port, () => {
-  console.log(`....:^^............................................^^^.................................. ...........
-...:&@G...........................................^&@P.................................~Y^ ..^BB?...
-...J@@! .!JJ~.~J?:~?J?~.....^7JJJ!:.....^7JJ?!:...5@@~ .!Y?^...~?JJ?~:...^JJ^...~JJ::J5@@G?..5@@~...
-...#@#.7#&G!..#@@GP5#@@J..?#@BYYG@@5..~#@&5YB@&!.:&@G.?#&G~..5&&PYY#@&7..G@@:...#@&::5@@#J?..&@G....
-..!@@#&@#:...~@@G.. !@@J Y@@J.. .#@@^^&@#.  .~~^.?@@#&@B:...B@@~ . :@@#.^@@P...!@@Y. ?@@! ..!@@~....
-..B@&JY@@7...P@@^...G@&:.#@@: . ^@@B.Y@@? ..^^:..#@&JP@&!..^@@B... J@@J 5@@^ ..B@@^..#@#....7BY.....
-.~@@P .5@@7.:@@B...^@@P..?&@BJ?5&&5:.^&@&J?G@&7.!@@Y .G@@~..P@@P?JG@&?..P@@GY5B@@G..:&@&J^.7BB~.....
-.~YY:...JY?.^YY^...~YY^...:!J5YJ!:.....!JYYJ!:..!YY:..:JY?...^7Y5Y?^.....!JYJ~^YY^...~JYY^.75Y:.....
-`)
+  if (req.headers['accept']) {
+    headers['accept'] = req.headers['accept']
+  }
 
-  console.log(`Knocky api proxy is running on port ${port}`)
+  const params = { ...req.query }
+  if (req.headers.knockoutjwt) {
+    params.key = apiKey
+  }
+
+  const targetUrl = `${apiUrl}${req.path}`
+  console.log(`[proxy] ${req.method} ${targetUrl}`)
+  console.log(`[proxy] req.path: ${req.path}`)
+  console.log(`[proxy] req.originalUrl: ${req.originalUrl}`)
+
+  axios({
+    method: req.method,
+    url: targetUrl,
+    headers: headers,
+    params: params,
+    data: req.body,
+    validateStatus: () => true,
+  })
+    .then(function (response) {
+      res.status(response.status).send(response.data)
+    })
+    .catch(function (error) {
+      if (error.response) {
+        res.status(error.response.status).send(error.response.data)
+      } else {
+        res.status(502).send('Proxy error')
+      }
+    })
 })
+
+// Export the app for serverless use (Netlify)
+module.exports = app
+
+// Start the server if run directly (e.g. node proxy.js)
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Knocky api proxy is running on port ${port}`)
+  })
+}
