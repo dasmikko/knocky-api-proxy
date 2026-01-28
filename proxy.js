@@ -23,11 +23,20 @@ app.get('/handleAuth', (req, res) => {
     return
   }
 
+  if (!apiKey) {
+    res.status(500)
+    res.send('Missing api key')
+    return
+  }
+
   axios({
     method: 'POST',
     url: `${apiUrl}/auth/request-token`,
     params: {
       key: apiKey
+    },
+    headers: {
+      'user-agent': 'Knocky',
     },
     data: {
       'authorization': authToken
@@ -72,9 +81,6 @@ app.all('/*', (req, res) => {
   }
 
   const targetUrl = `${apiUrl}${req.path}`
-  console.log(`[proxy] ${req.method} ${targetUrl}`)
-  console.log(`[proxy] req.path: ${req.path}`)
-  console.log(`[proxy] req.originalUrl: ${req.originalUrl}`)
 
   axios({
     method: req.method,
