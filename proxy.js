@@ -96,6 +96,11 @@ app.all('/*', (req, res) => {
     headers['accept'] = req.headers['accept']
   }
 
+  const clientIp = req.ip || req.connection.remoteAddress
+  headers['x-forwarded-for'] = req.headers['x-forwarded-for']
+    ? `${req.headers['x-forwarded-for']}, ${clientIp}`
+    : clientIp
+
   const params = { ...req.query }
   if (req.headers.knockoutjwt) {
     params.key = apiKey
